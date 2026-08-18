@@ -44,7 +44,7 @@ export class TextureEditor {
   end3DStroke(){if(this.dragging)this.finish('3D Paint Stroke');}
   finish(label){this.dragging=false;if(this.strokeBefore){const after=this.snapshot();this.history.push({label,before:this.strokeBefore,after,time:Date.now()});if(this.history.length>60)this.history.shift();this.redoStack=[];this.strokeBefore=null;this.onHistory?.(this.history);this.changed(label);}this.last=null;this.render();}
   snapshot(){return this.layers.map(l=>({...l,canvas:cloneCanvas(l.canvas)}));}
-  restore(s){this.layers=s.map(l=>({...l,canvas:cloneCanvas(l.canvas)}));if(!this.layers.some(l=>l.id===this.activeLayerId))this.activeLayerId=this.layers[0]?.id;this.changed('Restore',false);}
+  restore(s){this.layers=s.map(l=>({...l,canvas:cloneCanvas(l.canvas)}));if(!this.layers.some(l=>l.id===this.activeLayerId))this.activeLayerId=this.layers[0]?.id;this.changed('Restore');}
   undo(){const h=this.history.pop();if(!h)return;this.redoStack.push(h);this.restore(h.before);this.onHistory?.(this.history);}
   redo(){const h=this.redoStack.pop();if(!h)return;this.history.push(h);this.restore(h.after);this.onHistory?.(this.history);}
   addVersion(name=`v${this.versions.length+1}`){this.versions.push({id:crypto.randomUUID?.()||String(Date.now()),name,time:Date.now(),canvas:this.composite()});return this.versions.at(-1);}
