@@ -3,9 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#16181c" />
+  <meta name="theme-color" content="#0b0d10" />
   <meta name="description" content="UVMap - Online is a local-first 3D UV and texture editor for game modding workflows." />
   <title>UVMap - Online</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..24,300..500,0..1,0&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="./styles.css" />
   <script type="importmap">
   {
@@ -21,36 +24,44 @@
     <section id="dashboard" class="screen dashboard-screen">
       <header class="dashboard-header">
         <div class="brand-wrap">
-          <div class="brand-mark">UV</div>
-          <div>
-            <h1>UVMap - Online</h1>
+          <div class="brand-mark" aria-hidden="true"><span>UV</span></div>
+          <div class="brand-copy">
+            <h1>UVMap <span>Online</span></h1>
             <p data-i18n="dashboard.subtitle">Inspect UVs, paint textures and keep local project history.</p>
           </div>
         </div>
         <div class="dashboard-actions">
-          <button id="languageButton" class="ghost-button" type="button">TR</button>
-          <button id="trashButton" class="ghost-button" type="button" data-i18n="dashboard.trash">Trash</button>
-          <button id="newProjectButton" class="primary-button" type="button" data-i18n="dashboard.newProject">New Project</button>
+          <div class="local-pill"><span class="local-dot"></span><span>Local workspace</span></div>
+          <button id="languageButton" class="ghost-button compact-action" type="button">TR</button>
+          <button id="trashButton" class="ghost-button" type="button" data-i18n="dashboard.trash"><span class="material-symbols-outlined">delete</span><span>Trash</span></button>
+          <button id="newProjectButton" class="primary-button" type="button" data-i18n="dashboard.newProject"><span class="material-symbols-outlined">add</span><span>New Project</span></button>
         </div>
       </header>
 
       <main class="dashboard-main">
         <section class="hero-card">
-          <div>
-            <span class="eyebrow" data-i18n="dashboard.localFirst">LOCAL FIRST</span>
+          <div class="hero-copy">
+            <div class="hero-kicker"><span class="eyebrow" data-i18n="dashboard.localFirst">LOCAL FIRST</span><span class="hero-version">v1 workspace</span></div>
             <h2 data-i18n="dashboard.heroTitle">See exactly where your model reads its texture.</h2>
             <p data-i18n="dashboard.heroBody">Load a model, click a surface, inspect the matching UV area and edit the texture with live 3D feedback.</p>
+            <div class="hero-feature-row" aria-label="Highlights">
+              <span><i></i>3D to UV inspection</span>
+              <span><i></i>Live texture painting</span>
+              <span><i></i>Local autosave</span>
+            </div>
           </div>
           <button id="heroUploadButton" class="hero-upload" type="button">
-            <span class="upload-icon">+</span>
+            <span class="upload-orbit" aria-hidden="true"><span class="material-symbols-outlined">deployed_code</span></span>
             <strong data-i18n="dashboard.loadModel">Load 3D Model</strong>
-            <small>GLB, GLTF, FBX, OBJ</small>
+            <small>Drop a model here or browse files</small>
+            <span class="format-chips"><b>GLB</b><b>GLTF</b><b>FBX</b><b>OBJ</b></span>
           </button>
         </section>
 
         <section class="projects-section">
           <div class="section-heading">
             <div>
+              <span class="section-kicker">WORKSPACE</span>
               <h3 data-i18n="dashboard.recentProjects">Recent Projects</h3>
               <p data-i18n="dashboard.recentHint">Projects stay in this browser unless site data is cleared.</p>
             </div>
@@ -58,9 +69,10 @@
           </div>
           <div id="projectGrid" class="project-grid"></div>
           <div id="emptyProjects" class="empty-state hidden">
-            <div class="empty-icon">◇</div>
+            <div class="empty-icon"><span class="material-symbols-outlined">view_in_ar</span></div>
             <h3 data-i18n="dashboard.emptyTitle">No local projects yet</h3>
             <p data-i18n="dashboard.emptyBody">Load a model to start inspecting UVs and editing textures.</p>
+            <button class="ghost-button empty-cta" type="button" onclick="document.getElementById('heroUploadButton').click()"><span class="material-symbols-outlined">upload_file</span><span>Load your first model</span></button>
           </div>
         </section>
       </main>
@@ -69,36 +81,46 @@
     <section id="editor" class="screen editor-screen hidden">
       <header class="topbar">
         <div class="topbar-left">
-          <button id="backDashboardButton" class="icon-button" type="button" title="Dashboard">⌂</button>
-          <div class="brand-mini">UVMap</div>
-          <div class="topbar-separator"></div>
+          <button id="backDashboardButton" class="icon-button" type="button" title="Dashboard" aria-label="Dashboard"><span class="material-symbols-outlined">arrow_back</span></button>
+          <div class="brand-mini"><span>UV</span></div>
           <div class="project-title-wrap">
-            <input id="projectNameInput" value="Untitled Project" aria-label="Project name" />
+            <div class="project-title-line">
+              <input id="projectNameInput" value="Untitled Project" aria-label="Project name" />
+              <span class="project-local-badge">LOCAL</span>
+            </div>
             <span id="saveState" class="save-state">Saved locally</span>
           </div>
         </div>
+
         <div class="topbar-center">
-          <button id="loadModelButton" class="topbar-button" type="button" data-i18n="top.loadModel">Load Model</button>
-          <button id="loadTextureButton" class="topbar-button" type="button" data-i18n="top.loadTexture">Load Texture</button>
-          <button id="loadMtlButton" class="topbar-button hidden" type="button">Load MTL</button>
-          <button id="exportTextureButton" class="topbar-button" type="button" data-i18n="top.exportTexture">Export Texture</button>
-          <div class="export-menu-wrap">
-            <button id="exportModelButton" class="topbar-button" type="button" data-i18n="top.exportModel">Export Model</button>
-            <div id="exportMenu" class="popup-menu hidden">
-              <button id="exportGlbButton" type="button"><strong>GLB</strong><small>Safe</small></button>
-              <button id="exportFbxButton" type="button"><strong>FBX</strong><small>May have some bugs</small></button>
+          <div class="topbar-group">
+            <button id="loadModelButton" class="topbar-button" type="button" data-i18n="top.loadModel"><span class="material-symbols-outlined">view_in_ar</span><span>Model</span></button>
+            <button id="loadTextureButton" class="topbar-button" type="button" data-i18n="top.loadTexture"><span class="material-symbols-outlined">texture</span><span>Texture</span></button>
+            <button id="loadMtlButton" class="topbar-button hidden" type="button"><span class="material-symbols-outlined">palette</span><span>MTL</span></button>
+          </div>
+          <div class="topbar-group export-group">
+            <button id="exportTextureButton" class="topbar-button" type="button" data-i18n="top.exportTexture"><span class="material-symbols-outlined">image</span><span>Texture</span></button>
+            <div class="export-menu-wrap">
+              <button id="exportModelButton" class="topbar-button export-primary" type="button" data-i18n="top.exportModel"><span class="material-symbols-outlined">download</span><span>Export</span></button>
+              <div id="exportMenu" class="popup-menu hidden">
+                <div class="popup-menu-label">Export model</div>
+                <button id="exportGlbButton" type="button"><span class="popup-icon material-symbols-outlined">deployed_code</span><span class="popup-copy"><strong>GLB</strong><small>Safe export</small></span><span class="safe-dot"></span></button>
+                <button id="exportFbxButton" type="button"><span class="popup-icon material-symbols-outlined">deployed_code_update</span><span class="popup-copy"><strong>FBX</strong><small>May have some bugs</small></span><span class="warning-dot"></span></button>
+              </div>
             </div>
           </div>
         </div>
+
         <div class="topbar-right">
-          <button id="compareButton" class="icon-button" type="button" title="Before / After">◐</button>
-          <button id="historyPanelButton" class="icon-button" type="button" title="History">↶</button>
-          <button id="settingsButton" class="icon-button" type="button" title="Settings">⚙</button>
+          <button id="compareButton" class="icon-button" type="button" title="Before / After" aria-label="Before / After"><span class="material-symbols-outlined">compare</span></button>
+          <button id="historyPanelButton" class="icon-button" type="button" title="History" aria-label="History"><span class="material-symbols-outlined">history</span></button>
+          <button id="settingsButton" class="icon-button" type="button" title="Settings" aria-label="Settings"><span class="material-symbols-outlined">settings</span></button>
         </div>
       </header>
 
       <div class="workspace">
         <aside class="tool-rail" aria-label="Tools">
+          <div class="tool-rail-cap"><span class="tool-rail-dot"></span></div>
           <button class="tool-button active" data-tool="select" type="button" title="Select / Inspect (V)"><span>⌖</span><small>V</small></button>
           <button class="tool-button" data-tool="brush" type="button" title="Brush (B)"><span>●</span><small>B</small></button>
           <button class="tool-button" data-tool="eraser" type="button" title="Eraser (E)"><span>◌</span><small>E</small></button>
@@ -111,176 +133,98 @@
           <button class="tool-button" data-tool="ellipse" type="button" title="Ellipse (O)"><span>○</span><small>O</small></button>
           <button class="tool-button" data-tool="lasso" type="button" title="Lasso selection"><span>⌇</span><small></small></button>
           <button class="tool-button" data-tool="move" type="button" title="Move / Transform (M)"><span>✥</span><small>M</small></button>
+          <div class="tool-rail-spacer"></div>
+          <div class="tool-rail-foot"><span class="material-symbols-outlined">mouse</span><small>MMB</small></div>
         </aside>
 
         <aside id="propertiesPanel" class="properties-panel">
+          <div class="inspector-head">
+            <div><span class="inspector-kicker">INSPECTOR</span><strong>Properties</strong></div>
+            <span class="inspector-state">LIVE</span>
+          </div>
           <div class="panel-tabs">
-            <button class="panel-tab active" data-panel="tool" type="button" data-i18n="panel.tool">Tool</button>
-            <button class="panel-tab" data-panel="scene" type="button" data-i18n="panel.scene">Scene</button>
-            <button class="panel-tab" data-panel="layers" type="button" data-i18n="panel.layers">Layers</button>
+            <button class="panel-tab active" data-panel="tool" type="button" data-i18n="panel.tool"><span class="material-symbols-outlined">tune</span><span>Tool</span></button>
+            <button class="panel-tab" data-panel="scene" type="button" data-i18n="panel.scene"><span class="material-symbols-outlined">view_in_ar</span><span>Scene</span></button>
+            <button class="panel-tab" data-panel="layers" type="button" data-i18n="panel.layers"><span class="material-symbols-outlined">layers</span><span>Layers</span></button>
           </div>
 
           <div id="toolPanel" class="panel-page">
-            <div class="panel-section">
+            <div class="panel-section active-tool-card">
               <div class="section-label" data-i18n="panel.activeTool">Active Tool</div>
-              <div id="activeToolName" class="active-tool-name">Select / Inspect</div>
+              <div class="active-tool-row"><div class="active-tool-icon"><span class="material-symbols-outlined">ads_click</span></div><div><div id="activeToolName" class="active-tool-name">Select / Inspect</div><span class="active-tool-help">Click a surface to inspect its UV</span></div></div>
             </div>
             <div class="panel-section">
-              <label class="field-label" for="colorInput" data-i18n="panel.color">Color</label>
-              <div class="color-row">
-                <input id="colorInput" type="color" value="#ff7a1a" />
-                <input id="colorHexInput" type="text" value="#ff7a1a" maxlength="7" />
-              </div>
+              <div class="section-title-row"><label class="field-label" for="colorInput" data-i18n="panel.color">Color</label><span class="section-value">Paint</span></div>
+              <div class="color-row"><input id="colorInput" type="color" value="#ff7a1a" /><input id="colorHexInput" type="text" value="#ff7a1a" maxlength="7" /></div>
             </div>
             <div class="panel-section slider-stack">
-              <label>Size <span id="brushSizeValue">36 px</span></label>
-              <input id="brushSizeInput" type="range" min="1" max="400" value="36" />
-              <label>Opacity <span id="brushOpacityValue">100%</span></label>
-              <input id="brushOpacityInput" type="range" min="1" max="100" value="100" />
-              <label>Hardness <span id="brushHardnessValue">80%</span></label>
-              <input id="brushHardnessInput" type="range" min="0" max="100" value="80" />
-              <label>Stabilization <span id="brushStabilizationValue">15%</span></label>
-              <input id="brushStabilizationInput" type="range" min="0" max="90" value="15" />
+              <div class="control-row"><label>Size</label><span id="brushSizeValue">36 px</span></div><input id="brushSizeInput" type="range" min="1" max="400" value="36" />
+              <div class="control-row"><label>Opacity</label><span id="brushOpacityValue">100%</span></div><input id="brushOpacityInput" type="range" min="1" max="100" value="100" />
+              <div class="control-row"><label>Hardness</label><span id="brushHardnessValue">80%</span></div><input id="brushHardnessInput" type="range" min="0" max="100" value="80" />
+              <div class="control-row"><label>Stabilization</label><span id="brushStabilizationValue">15%</span></div><input id="brushStabilizationInput" type="range" min="0" max="90" value="15" />
             </div>
             <div class="panel-section toggle-stack">
-              <label><input id="pressureSizeInput" type="checkbox" checked /> Pen pressure affects size</label>
-              <label><input id="pressureOpacityInput" type="checkbox" /> Pen pressure affects opacity</label>
+              <label class="switch-row"><span>Pressure affects size</span><input id="pressureSizeInput" type="checkbox" checked /><i></i></label>
+              <label class="switch-row"><span>Pressure affects opacity</span><input id="pressureOpacityInput" type="checkbox" /><i></i></label>
             </div>
-            <div class="panel-section">
-              <button id="undoButton" class="wide-button" type="button">Undo <kbd>Ctrl Z</kbd></button>
-              <button id="redoButton" class="wide-button" type="button">Redo <kbd>Ctrl Shift Z</kbd></button>
-            </div>
-            <div class="panel-section">
-              <button id="compareToolButton" class="wide-button" type="button">Before / After</button>
+            <div class="panel-section command-stack">
+              <button id="undoButton" class="wide-button" type="button"><span><span class="material-symbols-outlined">undo</span>Undo</span><kbd>Ctrl Z</kbd></button>
+              <button id="redoButton" class="wide-button" type="button"><span><span class="material-symbols-outlined">redo</span>Redo</span><kbd>Ctrl Shift Z</kbd></button>
+              <button id="compareToolButton" class="wide-button" type="button"><span><span class="material-symbols-outlined">compare</span>Before / After</span></button>
             </div>
           </div>
 
           <div id="scenePanel" class="panel-page hidden">
-            <div class="panel-section">
-              <div class="section-label">Meshes</div>
-              <div id="meshList" class="list-stack"><div class="muted">Load a model first.</div></div>
+            <div class="panel-section"><div class="section-title-row"><div class="section-label">Meshes</div><span class="section-value">Visibility</span></div><div id="meshList" class="list-stack"><div class="muted">Load a model first.</div></div></div>
+            <div class="panel-section"><div class="section-title-row"><div class="section-label">UV Set</div><span class="section-value">Channel</span></div><select id="uvSetSelect" class="select-input"><option value="uv">UV0</option></select></div>
+            <div id="animationSection" class="panel-section hidden"><div class="section-title-row"><div class="section-label">Animation</div><span class="section-value">Preview</span></div><select id="animationSelect" class="select-input"></select><div class="button-row transport-row"><button id="playAnimationButton" class="small-button" type="button"><span class="material-symbols-outlined">play_arrow</span>Play</button><button id="pauseAnimationButton" class="small-button" type="button"><span class="material-symbols-outlined">pause</span>Pause</button><button id="stopAnimationButton" class="small-button" type="button"><span class="material-symbols-outlined">stop</span>Stop</button></div></div>
+            <div class="panel-section toggle-stack">
+              <div class="section-title-row"><div class="section-label">Viewport</div><span class="section-value">Display</span></div>
+              <label class="switch-row"><span>Grid</span><input id="gridToggle" type="checkbox" checked /><i></i></label>
+              <label class="switch-row"><span>Wireframe</span><input id="wireframeToggle" type="checkbox" /><i></i></label>
+              <label class="switch-row"><span>Studio lighting</span><input id="lightingToggle" type="checkbox" checked /><i></i></label>
+              <button id="resetCameraButton" class="wide-button" type="button"><span><span class="material-symbols-outlined">center_focus_strong</span>Reset Camera</span><kbd>Home</kbd></button>
+              <button id="fullscreenButton" class="wide-button" type="button"><span><span class="material-symbols-outlined">fullscreen</span>Fullscreen</span><kbd>F11</kbd></button>
             </div>
-            <div class="panel-section">
-              <div class="section-label">UV Set</div>
-              <select id="uvSetSelect" class="select-input"><option value="uv">UV0</option></select>
-            </div>
-            <div id="animationSection" class="panel-section hidden">
-              <div class="section-label">Animation</div>
-              <select id="animationSelect" class="select-input"></select>
-              <div class="button-row">
-                <button id="playAnimationButton" class="small-button" type="button">Play</button>
-                <button id="pauseAnimationButton" class="small-button" type="button">Pause</button>
-                <button id="stopAnimationButton" class="small-button" type="button">Stop</button>
-              </div>
-            </div>
-            <div class="panel-section">
-              <div class="section-label">Viewport</div>
-              <label><input id="gridToggle" type="checkbox" checked /> Grid</label>
-              <label><input id="wireframeToggle" type="checkbox" /> Wireframe</label>
-              <label><input id="lightingToggle" type="checkbox" checked /> Studio lighting</label>
-              <button id="resetCameraButton" class="wide-button" type="button">Reset Camera <kbd>Home</kbd></button>
-              <button id="fullscreenButton" class="wide-button" type="button">Fullscreen <kbd>F11</kbd></button>
-            </div>
-            <div class="panel-section shortcuts-card">
-              <div class="section-label">Viewport Shortcuts</div>
-              <p><kbd>MMB</kbd> Orbit</p>
-              <p><kbd>RMB</kbd> Pan</p>
-              <p><kbd>Wheel</kbd> Zoom</p>
-              <p><kbd>Click</kbd> Inspect UV</p>
-            </div>
+            <div class="panel-section shortcuts-card"><div class="section-title-row"><div class="section-label">Viewport shortcuts</div><span class="section-value">Mouse</span></div><p><span>Orbit</span><kbd>MMB</kbd></p><p><span>Pan</span><kbd>RMB</kbd></p><p><span>Zoom</span><kbd>Wheel</kbd></p><p><span>Inspect UV</span><kbd>Click</kbd></p></div>
           </div>
 
           <div id="layersPanel" class="panel-page hidden">
-            <div class="panel-section">
-              <div class="section-label row-between"><span>Layers</span><span class="button-row compact"><button id="addLayerButton" class="mini-button" type="button">+</button><button id="duplicateLayerButton" class="mini-button" type="button">⧉</button><button id="deleteLayerButton" class="mini-button danger" type="button">×</button></span></div>
-              <div id="layerList" class="layer-list"></div>
-            </div>
-            <div class="panel-section">
-              <label class="field-label">Blend Mode</label>
-              <select id="blendModeSelect" class="select-input">
-                <option value="source-over">Normal</option>
-                <option value="multiply">Multiply</option>
-                <option value="screen">Screen</option>
-                <option value="overlay">Overlay</option>
-                <option value="soft-light">Soft Light</option>
-                <option value="hard-light">Hard Light</option>
-                <option value="color-dodge">Color Dodge</option>
-                <option value="color-burn">Color Burn</option>
-                <option value="difference">Difference</option>
-              </select>
-              <label class="field-label">Layer Opacity <span id="layerOpacityValue">100%</span></label>
-              <input id="layerOpacityInput" type="range" min="0" max="100" value="100" />
-            </div>
+            <div class="panel-section layers-section"><div class="section-title-row"><div class="section-label">Layers</div><span class="button-row compact"><button id="addLayerButton" class="mini-button" type="button" title="Add layer"><span class="material-symbols-outlined">add</span></button><button id="duplicateLayerButton" class="mini-button" type="button" title="Duplicate layer"><span class="material-symbols-outlined">content_copy</span></button><button id="deleteLayerButton" class="mini-button danger" type="button" title="Delete layer"><span class="material-symbols-outlined">delete</span></button></span></div><div id="layerList" class="layer-list"></div></div>
+            <div class="panel-section"><label class="field-label">Blend Mode</label><select id="blendModeSelect" class="select-input"><option value="source-over">Normal</option><option value="multiply">Multiply</option><option value="screen">Screen</option><option value="overlay">Overlay</option><option value="soft-light">Soft Light</option><option value="hard-light">Hard Light</option><option value="color-dodge">Color Dodge</option><option value="color-burn">Color Burn</option><option value="difference">Difference</option></select><div class="control-row"><label>Layer Opacity</label><span id="layerOpacityValue">100%</span></div><input id="layerOpacityInput" type="range" min="0" max="100" value="100" /></div>
           </div>
         </aside>
 
         <main id="viewportWrap" class="viewport-wrap">
           <canvas id="viewportCanvas"></canvas>
-          <div class="viewport-top-left">
-            <span id="modelNameBadge" class="viewport-badge">No model loaded</span>
-            <span id="polyCountBadge" class="viewport-badge muted-badge">0 tris</span>
-          </div>
-          <div class="viewport-top-right">
-            <button id="toggleUvPanelButton" class="floating-button" type="button">UV</button>
-          </div>
-          <div id="viewportDropHint" class="viewport-drop-hint">
-            <strong data-i18n="viewport.dropModel">Drop a 3D model here</strong>
-            <span>GLB, GLTF, FBX, OBJ</span>
-          </div>
+          <div class="viewport-vignette" aria-hidden="true"></div>
+          <div class="viewport-top-left"><span id="modelNameBadge" class="viewport-badge model-badge"><span class="badge-dot"></span>No model loaded</span><span id="polyCountBadge" class="viewport-badge muted-badge">0 tris</span></div>
+          <div class="viewport-top-right"><div class="viewport-hint"><span class="material-symbols-outlined">mouse</span><span>MMB Orbit</span><span>RMB Pan</span><span>Wheel Zoom</span></div><button id="toggleUvPanelButton" class="floating-button" type="button"><span class="material-symbols-outlined">texture</span><span>UV</span></button></div>
+          <div id="viewportDropHint" class="viewport-drop-hint"><span class="drop-glyph"><span class="material-symbols-outlined">view_in_ar</span></span><strong data-i18n="viewport.dropModel">Drop a 3D model here</strong><span>GLB, GLTF, FBX, OBJ</span></div>
           <div id="toastHost" class="toast-host"></div>
 
           <section id="uvPanel" class="uv-panel">
             <header class="uv-panel-header">
-              <div class="uv-title-group">
-                <strong>Texture / UV</strong>
-                <span id="textureResolutionLabel">No texture</span>
-              </div>
-              <div class="uv-header-actions">
-                <select id="textureMapSelect" class="compact-select hidden"></select>
-                <select id="udimSelect" class="compact-select hidden"></select>
-                <button id="fitTextureButton" class="mini-button" type="button" title="Fit">⌗</button>
-                <button id="maximizeUvButton" class="mini-button" type="button" title="Maximize">□</button>
-                <button id="closeUvButton" class="mini-button" type="button" title="Hide">×</button>
-              </div>
+              <div class="uv-title-group"><span class="uv-panel-icon material-symbols-outlined">texture</span><div><strong>Texture / UV</strong><span id="textureResolutionLabel">No texture</span></div></div>
+              <div class="uv-header-actions"><select id="textureMapSelect" class="compact-select hidden"></select><select id="udimSelect" class="compact-select hidden"></select><button id="fitTextureButton" class="mini-button" type="button" title="Fit"><span class="material-symbols-outlined">fit_screen</span></button><button id="maximizeUvButton" class="mini-button" type="button" title="Maximize"><span class="material-symbols-outlined">open_in_full</span></button><button id="closeUvButton" class="mini-button" type="button" title="Hide"><span class="material-symbols-outlined">close</span></button></div>
             </header>
             <div id="uvCanvasWrap" class="uv-canvas-wrap">
               <canvas id="textureCanvas"></canvas>
               <canvas id="uvOverlayCanvas"></canvas>
-              <div id="textureEmptyState" class="texture-empty-state">
-                <span>Texture not loaded</span>
-                <button id="textureEmptyUpload" class="small-button" type="button">Load Texture</button>
-              </div>
+              <div id="textureEmptyState" class="texture-empty-state"><span class="material-symbols-outlined">image_not_supported</span><strong>Texture not loaded</strong><small>Load a texture to inspect UV islands and paint.</small><button id="textureEmptyUpload" class="small-button" type="button"><span class="material-symbols-outlined">upload_file</span>Load Texture</button></div>
             </div>
-            <footer class="uv-panel-footer">
-              <span id="uvCoordinateLabel">U: 0.000 V: 0.000</span>
-              <span id="textureZoomLabel">100%</span>
-            </footer>
+            <footer class="uv-panel-footer"><span class="uv-footer-group"><span class="footer-label">COORD</span><span id="uvCoordinateLabel">U: 0.000 V: 0.000</span></span><span class="uv-footer-group"><span class="footer-label">ZOOM</span><span id="textureZoomLabel">100%</span></span></footer>
             <div id="uvResizeHandle" class="resize-handle" aria-hidden="true"></div>
           </section>
         </main>
       </div>
 
       <section id="historyDrawer" class="history-drawer hidden">
-        <header>
-          <div>
-            <strong>History</strong>
-            <span id="historyCountLabel">0 actions</span>
-          </div>
-          <button id="closeHistoryButton" class="mini-button" type="button">×</button>
-        </header>
-        <div class="history-drawer-body">
-          <div class="history-section-title"><span>Texture Versions</span><button id="saveVersionButton" class="mini-button" type="button">Save</button></div>
-          <div id="versionList" class="version-list"></div>
-          <div class="history-section-title"><span>Edit Actions</span></div>
-          <div id="historyList" class="history-list"></div>
-        </div>
+        <header><div class="history-title"><span class="material-symbols-outlined">history</span><div><strong>History</strong><span id="historyCountLabel">0 actions</span></div></div><button id="closeHistoryButton" class="mini-button" type="button"><span class="material-symbols-outlined">close</span></button></header>
+        <div class="history-drawer-body"><div class="history-section-title"><span>Texture Versions</span><button id="saveVersionButton" class="mini-button" type="button"><span class="material-symbols-outlined">add</span>Save</button></div><div id="versionList" class="version-list"></div><div class="history-section-title"><span>Edit Actions</span></div><div id="historyList" class="history-list"></div></div>
       </section>
 
-      <footer class="statusbar">
-        <span id="statusMessage">Ready</span>
-        <span id="autosaveStatus">Autosave: on</span>
-        <span id="storageStatus">Local storage</span>
-      </footer>
+      <footer class="statusbar"><span class="status-cluster"><span class="status-indicator"></span><span id="statusMessage">Ready</span></span><span class="status-cluster"><span class="material-symbols-outlined">sync</span><span id="autosaveStatus">Autosave: on</span></span><span class="status-cluster"><span class="material-symbols-outlined">database</span><span id="storageStatus">Local storage</span></span></footer>
     </section>
   </div>
 
@@ -288,10 +232,7 @@
   <input id="textureFileInput" type="file" accept=".png,.jpg,.jpeg,.webp,.bmp,.tga,.dds" multiple hidden />
   <input id="mtlFileInput" type="file" accept=".mtl" hidden />
 
-  <div id="modalBackdrop" class="modal-backdrop hidden">
-    <div id="modalCard" class="modal-card"></div>
-  </div>
-
+  <div id="modalBackdrop" class="modal-backdrop hidden"><div id="modalCard" class="modal-card"></div></div>
   <script type="module" src="./js/app.js"></script>
 </body>
 </html>
