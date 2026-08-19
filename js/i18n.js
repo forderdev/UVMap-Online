@@ -71,11 +71,21 @@ export function t(key) {
   return translations[currentLanguage]?.[key] || translations.en[key] || key;
 }
 
+function setTranslatedContent(element, value) {
+  const directTextTarget = [...element.children].find(child =>
+    child.tagName === 'SPAN' &&
+    !child.classList.contains('material-symbols-outlined') &&
+    !child.classList.contains('local-dot')
+  );
+  if (directTextTarget) directTextTarget.textContent = value;
+  else element.textContent = value;
+}
+
 export function applyTranslations() {
   document.documentElement.lang = currentLanguage;
   document.querySelectorAll('[data-i18n]').forEach(element => {
     const key = element.getAttribute('data-i18n');
-    element.textContent = t(key);
+    setTranslatedContent(element, t(key));
   });
   const languageButton = document.getElementById('languageButton');
   if (languageButton) languageButton.textContent = currentLanguage === 'en' ? 'TR' : 'EN';
