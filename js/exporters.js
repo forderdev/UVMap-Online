@@ -17,7 +17,7 @@ export async function exportGLB(root, animations = []) {
         animations,
         onlyVisible: true,
         truncateDrawRange: true,
-        maxTextureSize: 8192,
+        maxTextureSize: Infinity,
       }
     );
   });
