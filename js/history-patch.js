@@ -3,6 +3,7 @@ import { TextureEditor } from './texture-editor.js';
 function push(editor,label,before){const after=editor.snapshot();editor.history.push({label,before,after,time:Date.now()});if(editor.history.length>60)editor.history.shift();editor.redoStack=[];editor.onHistory?.(editor.history);}
 let opacityTimer=null,opacityEditor=null,opacityBefore=null;
 function flushOpacity(){if(!opacityEditor||!opacityBefore)return;clearTimeout(opacityTimer);push(opacityEditor,'Layer Opacity',opacityBefore);opacityTimer=null;opacityEditor=null;opacityBefore=null;}
+TextureEditor.prototype.flushPendingLayerHistory=flushOpacity;
 function wrap(name,label){const original=TextureEditor.prototype[name];TextureEditor.prototype[name]=function(...args){flushOpacity();if(name==='deleteLayer'&&this.layers.length<=1)return original.apply(this,args);const before=this.snapshot();const result=original.apply(this,args);push(this,label,before);return result;};}
 wrap('addLayer','Add Layer');
 wrap('duplicateLayer','Duplicate Layer');
