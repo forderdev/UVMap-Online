@@ -1,3 +1,5 @@
+import './qa-patch.js';
+
 const translations = {
   en: {
     'dashboard.subtitle': 'Inspect UVs, paint textures and keep local project history.',
