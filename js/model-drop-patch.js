@@ -63,9 +63,9 @@ function installStyles() {
   const style = document.createElement('style');
   style.id = 'modelDropStyles';
   style.textContent = `
-    .hero-card, .hero-upload, .viewport-wrap { transition: border-color .15s ease, box-shadow .15s ease, background-color .15s ease; }
+    .hero-card, .viewport-wrap { transition: border-color .15s ease, box-shadow .15s ease, background-color .15s ease; }
     .model-drop-active { border-color: #ff7a1a !important; box-shadow: inset 0 0 0 2px rgba(255,122,26,.55), 0 0 30px rgba(255,122,26,.16) !important; }
-    .hero-card.model-drop-active, .hero-upload.model-drop-active { background-color: rgba(255,122,26,.06) !important; }
+    .hero-card.model-drop-active { background-color: rgba(255,122,26,.06) !important; }
     .model-drop-invalid { animation: uvmap-drop-invalid .22s ease 2; }
     @keyframes uvmap-drop-invalid { 50% { box-shadow: inset 0 0 0 2px rgba(255,75,75,.8); } }
   `;
@@ -78,7 +78,6 @@ function install() {
   input.multiple = true;
   installStyles();
   installDropZone(document.querySelector('.hero-card'), input);
-  installDropZone(document.getElementById('heroUploadButton'), input);
   installDropZone(document.getElementById('viewportWrap'), input);
 }
 
