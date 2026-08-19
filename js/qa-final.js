@@ -149,7 +149,7 @@ function syncTextureMapSelector() {
   if (!viewer || !select) return;
   const maps = viewer.getAvailableTextureMaps?.() || [];
   if (!maps.length) return;
-  const current = select.value || 'map';
+  const previous = select.value || 'map';
   select.innerHTML = '';
   for (const map of maps) {
     const option = document.createElement('option');
@@ -157,8 +157,10 @@ function syncTextureMapSelector() {
     option.textContent = map.label;
     select.append(option);
   }
-  select.value = maps.some(x => x.key === current) ? current : maps[0].key;
+  const next = maps.some(x => x.key === previous) ? previous : maps[0].key;
+  select.value = next;
   select.classList.toggle('hidden', maps.length <= 1);
+  if (next !== previous && typeof select.onchange === 'function') setTimeout(() => select.onchange({ target: select, type: 'change' }));
 }
 
 function installFinalQa() {
