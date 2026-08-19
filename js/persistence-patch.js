@@ -3,6 +3,7 @@ import './qa-final.js';
 import './material-groups-patch.js';
 import './document-state-patch.js';
 import './history-patch.js';
+import './raster-history-patch.js';
 import { TextureEditor } from './texture-editor.js';
 
 const originalLoadImageSource = TextureEditor.prototype.loadImageSource;
