@@ -18,8 +18,20 @@ ModelViewer.prototype.loadFile=async function(file){
   finally{urls.forEach(URL.revokeObjectURL);draco.dispose();ktx.dispose();window.__uvmapPendingModelFiles=null;window.__uvmapPendingModelDependencies=null;}
 };
 
+function captureFiles(input){
+  let files=[...input.files],model=files.find(f=>/\.(glb|gltf|fbx|obj)$/i.test(f.name));
+  if(model&&files[0]!==model&&typeof DataTransfer!=='undefined'){
+    try{const dt=new DataTransfer();dt.items.add(model);files.filter(f=>f!==model).forEach(f=>dt.items.add(f));input.files=dt.files;files=[...input.files];}catch{}
+  }
+  window.__uvmapPendingModelFiles=files;
+}
 function setup(){
-  const input=document.getElementById('modelFileInput'),viewport=document.getElementById('viewportWrap');if(input){input.multiple=true;input.accept='.glb,.gltf,.fbx,.obj,.bin,.png,.jpg,.jpeg,.webp,.ktx2,.basis';const original=input.onchange;input.onchange=function(event){let files=[...input.files],model=files.find(f=>/\.(glb|gltf|fbx|obj)$/i.test(f.name));if(model&&files[0]!==model&&typeof DataTransfer!=='undefined'){try{const dt=new DataTransfer();dt.items.add(model);files.filter(f=>f!==model).forEach(f=>dt.items.add(f));input.files=dt.files;files=[...input.files];}catch{}}window.__uvmapPendingModelFiles=files;return original?.call(input,event);};}
+  const input=document.getElementById('modelFileInput'),viewport=document.getElementById('viewportWrap');
+  if(input){
+    input.multiple=true;
+    input.accept='.glb,.gltf,.fbx,.obj,.bin,.png,.jpg,.jpeg,.webp,.ktx2,.basis';
+    input.addEventListener('change',()=>captureFiles(input),true);
+  }
   viewport?.addEventListener('drop',event=>{window.__uvmapPendingModelFiles=[...event.dataTransfer.files];},true);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',setup);else setup();
