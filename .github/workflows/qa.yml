@@ -87,6 +87,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           QA_JOB_STATUS: ${{ job.status }}
+          QA_TARGET_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           state=failure
           description='UVMap static QA failed'
@@ -94,10 +95,10 @@ jobs:
             state=success
             description='UVMap static QA passed'
           fi
-          python - "$state" "$description" <<'PY' > /tmp/qa-status.json
+          python - "$state" "$description" "$QA_TARGET_URL" <<'PY' > /tmp/qa-status.json
           import json
           import sys
-          print(json.dumps({'state': sys.argv[1], 'context': 'uvmap/static-qa', 'description': sys.argv[2]}))
+          print(json.dumps({'state': sys.argv[1], 'context': 'uvmap/static-qa', 'description': sys.argv[2], 'target_url': sys.argv[3]}))
           PY
           curl --fail-with-body --silent --show-error -X POST \
             -H "Authorization: Bearer $GH_TOKEN" \
@@ -143,6 +144,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           QA_JOB_STATUS: ${{ job.status }}
+          QA_TARGET_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           state=failure
           description='UVMap browser QA failed'
@@ -150,10 +152,10 @@ jobs:
             state=success
             description='UVMap browser QA passed'
           fi
-          python - "$state" "$description" <<'PY' > /tmp/qa-status.json
+          python - "$state" "$description" "$QA_TARGET_URL" <<'PY' > /tmp/qa-status.json
           import json
           import sys
-          print(json.dumps({'state': sys.argv[1], 'context': 'uvmap/browser-qa', 'description': sys.argv[2]}))
+          print(json.dumps({'state': sys.argv[1], 'context': 'uvmap/browser-qa', 'description': sys.argv[2], 'target_url': sys.argv[3]}))
           PY
           curl --fail-with-body --silent --show-error -X POST \
             -H "Authorization: Bearer $GH_TOKEN" \
