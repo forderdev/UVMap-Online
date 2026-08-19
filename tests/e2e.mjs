@@ -118,6 +118,36 @@ try {
   assert.equal(modelInfo.uvCount, 3);
   assert.ok(modelInfo.maps.includes('map'));
 
+  const glowState = await page.evaluate(() => {
+    const viewer = window.__uvmapViewer;
+    const hovered = viewer.hoverFaceByUV(0.5, 0.25);
+    viewer.render();
+    const hoverVisible = Boolean(hovered && viewer._qaHoverGlow?.visible);
+    const hoverVertices = viewer._qaHoverGlow?.geometry?.getAttribute('position')?.count || 0;
+    const selected = viewer.selectFaceByUV(0.5, 0.25);
+    viewer.render();
+    const selectedVisible = Boolean(selected && viewer._qaSelectedGlow?.visible);
+    const selectedVertices = viewer._qaSelectedGlow?.geometry?.getAttribute('position')?.count || 0;
+    viewer.hoverFaceByUV(4, 4);
+    viewer.render();
+    return {
+      hoverVisible,
+      hoverVertices,
+      selectedVisible,
+      selectedVertices,
+      hoverHidden: viewer._qaHoverGlow?.visible === false,
+      selectedColor: viewer._qaSelectedGlow?.material?.color?.getHex(),
+      hoverColor: viewer._qaHoverGlow?.material?.color?.getHex(),
+    };
+  });
+  assert.equal(glowState.hoverVisible, true);
+  assert.equal(glowState.hoverVertices, 3);
+  assert.equal(glowState.selectedVisible, true);
+  assert.equal(glowState.selectedVertices, 3);
+  assert.equal(glowState.hoverHidden, true);
+  assert.equal(glowState.selectedColor, 0xff7a1a);
+  assert.equal(glowState.hoverColor, 0x5bdcff);
+
   const originalPixel = await page.evaluate(() => {
     const c = window.__uvmapTex.composite(); return [...c.getContext('2d').getImageData(8, 8, 1, 1).data];
   });
