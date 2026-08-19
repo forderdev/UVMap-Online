@@ -3,7 +3,8 @@ import { TextureEditor } from './texture-editor.js';
 const RASTER=new Set(['brush','eraser','fill','line','rect','ellipse']);
 const SHAPES=new Set(['line','rect','ellipse']);
 function cloneCanvas(src){const c=document.createElement('canvas');c.width=src.width;c.height=src.height;c.getContext('2d').drawImage(src,0,0);return c;}
-function activeSnapshot(editor){const layer=editor.activeLayer;return layer?[{...layer,canvas:cloneCanvas(layer.canvas)}]:[];}
+function cloneLayer(layer){return{...layer,canvas:cloneCanvas(layer.canvas)};}
+function activeSnapshot(editor){const layer=editor.activeLayer;return layer?[cloneLayer(layer)]:[];}
 function withActiveSnapshot(editor,callback){const own=Object.prototype.hasOwnProperty.call(editor,'snapshot'),previous=editor.snapshot;editor.snapshot=()=>activeSnapshot(editor);try{return callback();}finally{if(own)editor.snapshot=previous;else delete editor.snapshot;}}
 function expand(editor,x0,y0,x1,y1){const b=editor._qaRasterBounds;if(!b)editor._qaRasterBounds={x0,y0,x1,y1};else{b.x0=Math.min(b.x0,x0);b.y0=Math.min(b.y0,y0);b.x1=Math.max(b.x1,x1);b.y1=Math.max(b.y1,y1);}}
 function clampBounds(editor){const b=editor._qaRasterBounds;if(!b)return null;const x=Math.max(0,Math.floor(b.x0)),y=Math.max(0,Math.floor(b.y0)),x1=Math.min(editor.doc.width,Math.ceil(b.x1)),y1=Math.min(editor.doc.height,Math.ceil(b.y1));const w=x1-x,h=y1-y;return w>0&&h>0?{x,y,w,h}:null;}
@@ -42,11 +43,11 @@ TextureEditor.prototype.finish=function(label){
     const beforeLayers=this.strokeBefore,bounds=clampBounds(this),layer=this.activeLayer,beforeLayer=layer&&beforeLayers.find(x=>x.id===layer.id);
     if(bounds&&beforeLayer&&beforeLayers.length===1){
       try{
-        const beforeData=beforeLayer.canvas.getContext('2d').getImageData(bounds.x,bounds.y,bounds.w,bounds.h);const afterData=layer.canvas.getContext('2d').getImageData(bounds.x,bounds.y,bounds.w,bounds.h);
+        const beforeData=beforeLayer.canvas.getContext('2d').getImageData(bounds.x,bounds.y,bounds.w,bounds.h),afterData=layer.canvas.getContext('2d').getImageData(bounds.x,bounds.y,bounds.w,bounds.h);
         push(this,{kind:'pixels',label,layerId:layer.id,...bounds,beforeData,afterData,time:Date.now()});
-      }catch(error){const after=this.snapshot();push(this,{kind:'snapshot',label,before:beforeLayers,after,time:Date.now()});}
+      }catch(error){const after=this.snapshot(),before=after.map(item=>item.id===beforeLayer.id?cloneLayer(beforeLayer):item);push(this,{kind:'snapshot',label,before,after,time:Date.now()});}
     }else{
-      const after=this.snapshot();push(this,{kind:'snapshot',label,before:beforeLayers,after,time:Date.now()});
+      const after=this.snapshot(),before=beforeLayers.length===1&&beforeLayer?after.map(item=>item.id===beforeLayer.id?cloneLayer(beforeLayer):item):beforeLayers;push(this,{kind:'snapshot',label,before,after,time:Date.now()});
     }
     this.strokeBefore=null;this.changed(label);
   }
@@ -54,13 +55,22 @@ TextureEditor.prototype.finish=function(label){
 };
 
 function applyPixels(editor,entry,data){const layer=editor.layers.find(l=>l.id===entry.layerId);if(!layer)return false;layer.canvas.getContext('2d').putImageData(data,entry.x,entry.y);return true;}
+function insertLayer(editor,entry){if(editor.layers.some(l=>l.id===entry.layer.id))return;const index=Math.max(0,Math.min(entry.index,editor.layers.length));editor.layers.splice(index,0,cloneLayer(entry.layer));}
+function removeLayer(editor,id){const index=editor.layers.findIndex(l=>l.id===id);if(index>=0)editor.layers.splice(index,1);}
+function applySpecial(editor,h,redo){
+  if(h.kind==='pixels'){applyPixels(editor,h,redo?h.afterData:h.beforeData);return true;}
+  if(h.kind==='layer-meta'){const layer=editor.layers.find(l=>l.id===h.layerId);if(layer)layer[h.property]=redo?h.afterValue:h.beforeValue;return true;}
+  if(h.kind==='layer-add'){if(redo){insertLayer(editor,h);editor.activeLayerId=h.afterActive||h.layer.id;}else{removeLayer(editor,h.layer.id);editor.activeLayerId=h.previousActive||editor.layers[0]?.id;}return true;}
+  if(h.kind==='layer-delete'){if(redo){removeLayer(editor,h.layer.id);editor.activeLayerId=h.afterActive||editor.layers[0]?.id;}else{insertLayer(editor,h);editor.activeLayerId=h.previousActive||h.layer.id;}return true;}
+  return false;
+}
 TextureEditor.prototype.undo=function(){
   this.flushPendingLayerHistory?.();const h=this.history.pop();if(!h)return;this.redoStack.push(h);
-  if(h.kind==='pixels'){applyPixels(this,h,h.beforeData);this.changed('Undo');}else this.restore(h.before);
+  if(applySpecial(this,h,false))this.changed('Undo');else this.restore(h.before);
   this.onHistory?.(this.history);
 };
 TextureEditor.prototype.redo=function(){
   this.flushPendingLayerHistory?.();const h=this.redoStack.pop();if(!h)return;this.history.push(h);
-  if(h.kind==='pixels'){applyPixels(this,h,h.afterData);this.changed('Redo');}else this.restore(h.after);
+  if(applySpecial(this,h,true))this.changed('Redo');else this.restore(h.after);
   this.onHistory?.(this.history);
 };
