@@ -3,6 +3,7 @@ import './qa-final.js';
 import './material-groups-patch.js';
 import './document-state-patch.js';
 import './uv-transform-patch.js';
+import './udim-live-patch.js';
 import './history-patch.js';
 import './raster-history-patch.js';
 import './icon-polish-patch.js';
