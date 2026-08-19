@@ -26,7 +26,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for file in js/*.js; do
+          for file in js/*.js tests/*.mjs; do
             echo "Checking $file"
             node --check "$file"
           done
@@ -42,7 +42,7 @@ jobs:
           root = Path('.')
           failures = []
 
-          for source in (root / 'js').glob('*.js'):
+          for source in list((root / 'js').glob('*.js')) + list((root / 'tests').glob('*.mjs')):
               text = source.read_text(encoding='utf-8')
               for spec in re.findall(r'''(?:import|export)\s+(?:[^'\"]+?\s+from\s+)?['\"](\.[^'\"]+)['\"]''', text):
                   target = (source.parent / spec).resolve()
@@ -82,7 +82,7 @@ jobs:
           fi
           echo 'OK: no em dash in UI source'
 
-      - name: Publish QA commit status
+      - name: Publish static QA status
         if: always() && github.event_name == 'push'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -97,14 +97,65 @@ jobs:
           python - "$state" "$description" <<'PY' > /tmp/qa-status.json
           import json
           import sys
-          print(json.dumps({
-              'state': sys.argv[1],
-              'context': 'uvmap/static-qa',
-              'description': sys.argv[2],
-          }))
+          print(json.dumps({'state': sys.argv[1], 'context': 'uvmap/static-qa', 'description': sys.argv[2]}))
           PY
-          curl --fail-with-body --silent --show-error \
-            -X POST \
+          curl --fail-with-body --silent --show-error -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+            --data-binary @/tmp/qa-status.json
+
+  browser-qa:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Playwright Chromium
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Start static server
+        run: |
+          python3 -m http.server 4173 > /tmp/uvmap-server.log 2>&1 &
+          echo $! > /tmp/uvmap-server.pid
+          for i in {1..30}; do
+            if curl --silent --fail http://127.0.0.1:4173/ > /dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/uvmap-server.log
+          exit 1
+
+      - name: Browser WebGL smoke test
+        run: node tests/e2e.mjs
+
+      - name: Publish browser QA status
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          QA_JOB_STATUS: ${{ job.status }}
+        run: |
+          state=failure
+          description='UVMap browser QA failed'
+          if [ "$QA_JOB_STATUS" = 'success' ]; then
+            state=success
+            description='UVMap browser QA passed'
+          fi
+          python - "$state" "$description" <<'PY' > /tmp/qa-status.json
+          import json
+          import sys
+          print(json.dumps({'state': sys.argv[1], 'context': 'uvmap/browser-qa', 'description': sys.argv[2]}))
+          PY
+          curl --fail-with-body --silent --show-error -X POST \
             -H "Authorization: Bearer $GH_TOKEN" \
             -H 'Accept: application/vnd.github+json' \
             -H 'X-GitHub-Api-Version: 2022-11-28' \
