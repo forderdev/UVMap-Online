@@ -42,6 +42,12 @@ async function withStore(mode, callback) {
   }
 }
 
+function toFile(entry) {
+  if (!entry?.blob || !entry?.name) return null;
+  try { return new File([entry.blob], entry.name, { type: entry.type || entry.blob.type || '' }); }
+  catch { return entry.blob; }
+}
+
 export async function listProjects({ trash = false } = {}) {
   const records = await withStore('readonly', store => requestToPromise(store.getAll()));
   return records
@@ -55,6 +61,8 @@ export async function getProject(id) {
   else window.__uvmapPendingEditorState = null;
   window.__uvmapPendingActiveMap = project?.qaActiveMap || null;
   window.__uvmapPendingActiveUdim = project?.qaActiveUdim || null;
+  window.__uvmapPendingModelDependencies = (project?.qaModelDependencies || []).map(toFile).filter(Boolean);
+  window.__uvmapPendingMtlFile = project?.qaMtlFile ? toFile(project.qaMtlFile) : null;
   return project;
 }
 
@@ -74,9 +82,14 @@ export async function saveProject(project) {
       payload.editorStateV2 = await editor.serializePersistentState();
       payload.qaActiveMap = mapSelect?.value || 'map';
       payload.qaActiveUdim = Number(udimSelect?.value || 1001);
+      payload.qaModelDependencies = (window.__uvmapCurrentModelDependencies || []).map(file => ({ name: file.name, type: file.type || '', blob: file }));
+      if (window.__uvmapCurrentMtlFile) {
+        const file = window.__uvmapCurrentMtlFile;
+        payload.qaMtlFile = { name: file.name, type: file.type || '', blob: file };
+      }
     }
   } catch (error) {
-    console.warn('Could not persist editor layer state', error);
+    console.warn('Could not persist editor project state', error);
   }
   await withStore('readwrite', store => requestToPromise(store.put(payload)));
   return payload;
@@ -109,28 +122,20 @@ export async function purgeExpiredTrash(days = 30) {
   const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
   const trash = await listProjects({ trash: true });
   const expired = trash.filter(item => item.deletedAt && item.deletedAt < cutoff);
-  for (const item of expired) {
-    await deleteProjectForever(item.id);
-  }
+  for (const item of expired) await deleteProjectForever(item.id);
   return expired.length;
 }
 
 export async function estimateStorage() {
   if (!navigator.storage?.estimate) return null;
   const estimate = await navigator.storage.estimate();
-  return {
-    usage: estimate.usage || 0,
-    quota: estimate.quota || 0,
-  };
+  return { usage: estimate.usage || 0, quota: estimate.quota || 0 };
 }
 
 export async function requestPersistentStorage() {
   if (!navigator.storage?.persist) return false;
-  try {
-    return await navigator.storage.persist();
-  } catch {
-    return false;
-  }
+  try { return await navigator.storage.persist(); }
+  catch { return false; }
 }
 
 export function createProjectId() {
