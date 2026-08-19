@@ -54,7 +54,6 @@ function installOrbitRecovery(viewer) {
   viewer._orbitRecoveryInstalled = true;
 
   const canvas = viewer.canvas;
-  const controls = viewer.controls;
 
   // A new middle mouse press must always be able to start a fresh orbit.
   // If an earlier pointer release was missed, repair the stale state before
@@ -84,10 +83,6 @@ function installOrbitRecovery(viewer) {
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') viewer.recoverOrbitInput('document-hidden');
   });
-
-  // Keep the intended desktop mapping explicit in case another code path
-  // replaces the controls object in a future update.
-  if (controls?.mouseButtons) controls.mouseButtons.MIDDLE = 0;
 }
 
 const originalResize = ModelViewer.prototype.resize;
