@@ -1,4 +1,5 @@
 import './persistence-patch.js';
+import './icon-polish-patch.js';
 
 const translations = {
   en: {
