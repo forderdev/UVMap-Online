@@ -2,6 +2,7 @@ import './qa-patch.js';
 import './qa-final.js';
 import './selection-glow-patch.js';
 import './gltf-deps-patch.js';
+import './model-drop-patch.js';
 import './mtl-persistence-patch.js';
 import './material-groups-patch.js';
 import './document-state-patch.js';
