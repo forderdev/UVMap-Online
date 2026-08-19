@@ -23,6 +23,9 @@ async function deserializeState(state) {
   return { width:state.width,height:state.height,activeLayerId:state.activeLayerId,layers,versions };
 }
 
+const imageLoadBase=TextureEditor.prototype.loadImageSource;
+TextureEditor.prototype.loadImageSource=async function(...args){const result=await imageLoadBase.apply(this,args);this._qaImageLoadSerial=(this._qaImageLoadSerial||0)+1;return result;};
+
 TextureEditor.prototype.restoreCapturedState = function (state, label='Switch Texture Document') {
   if (!state?.layers?.length) return false;
   const copy=cloneState(state); this.doc.width=copy.width;this.doc.height=copy.height;this.layers=copy.layers;this.versions=copy.versions;this.activeLayerId=copy.layers.some(l=>l.id===copy.activeLayerId)?copy.activeLayerId:copy.layers[0].id;this.history=[];this.redoStack=[];this.selection=null;this.fit();this.changed(label);this.onHistory?.(this.history);return true;
@@ -47,7 +50,14 @@ function setupDocuments(){
   const tex=window.__uvmapTex,viewer=window.__uvmapViewer,mapSelect=$('textureMapSelect'),udimSelect=$('udimSelect');if(!tex||!mapSelect||!udimSelect)return;
   tex._qaDocumentStore=tex._qaDocumentStore||new Map();tex._qaDocumentKey=tex._qaDocumentKey||keyFromUi();
   const saveCurrent=()=>{if(tex._qaDocumentKey&&tex.layers?.length)tex._qaDocumentStore.set(tex._qaDocumentKey,tex.capturePersistentState());};
-  const wrapSelect=select=>{const original=select.onchange;select.onchange=async event=>{saveCurrent();if(original)await original.call(select,event);const next=keyFromUi();tex._qaDocumentKey=next;const saved=tex._qaDocumentStore.get(next);if(saved)tex.restoreCapturedState(saved);else if(tex.layers?.length)tex._qaDocumentStore.set(next,tex.capturePersistentState());};};
+  const wrapSelect=select=>{const original=select.onchange;select.onchange=async event=>{
+    saveCurrent();const beforeSerial=tex._qaImageLoadSerial||0,beforeW=tex.doc.width,beforeH=tex.doc.height;
+    if(original)await original.call(select,event);
+    const next=keyFromUi();tex._qaDocumentKey=next;const saved=tex._qaDocumentStore.get(next);
+    if(saved)tex.restoreCapturedState(saved);
+    else if((tex._qaImageLoadSerial||0)!==beforeSerial)tex._qaDocumentStore.set(next,tex.capturePersistentState());
+    else{tex.newDocument(beforeW,beforeH);tex.activeTile=Number(udimSelect.value||1001);tex.addVersion('Original');tex._qaDocumentStore.set(next,tex.capturePersistentState());tex.changed('Create UDIM Tile');}
+  };};
   wrapSelect(mapSelect);wrapSelect(udimSelect);
   const oldFaceSelect=viewer.onFaceSelect;viewer.onFaceSelect=info=>{const before=Number(udimSelect.value||1001);oldFaceSelect?.(info);if(info?.udim&&info.udim!==before&&[...udimSelect.options].some(o=>Number(o.value)===info.udim)){udimSelect.value=String(info.udim);udimSelect.onchange?.({target:udimSelect,type:'change'});}};
   $('textureFileInput')?.addEventListener('change',event=>{const map=mapSelect.value||'map';for(const file of event.target.files||[]){const m=file.name.toLowerCase().match(/(?:^|[._-])(1\d{3})(?:[._-]|$)/),udim=m?Number(m[1]):1001;tex._qaDocumentStore.delete(`${map}:${udim}`);}},true);
