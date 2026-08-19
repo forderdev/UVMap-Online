@@ -156,9 +156,11 @@ try {
   });
   assert.deepEqual(layers, { before: 1, added: 2, undone: 1, redone: 2 });
 
-  const downloadPromise = page.waitForEvent('download', { timeout: 30000 });
-  await page.locator('#exportGlbButton').click({ force: true });
-  const download = await downloadPromise;
+  await page.locator('#exportModelButton').click();
+  const [download] = await Promise.all([
+    page.waitForEvent('download', { timeout: 30000 }),
+    page.locator('#exportGlbButton').click(),
+  ]);
   assert.ok(download.suggestedFilename().endsWith('.glb'));
 
   await page.evaluate(() => {
