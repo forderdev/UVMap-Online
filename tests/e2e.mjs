@@ -65,18 +65,47 @@ makeFixture(fixtureDir);
 const browser = await chromium.launch({ headless: true, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
 const pageErrors = [];
+const consoleErrors = [];
+const requestFailures = [];
 page.on('pageerror', error => pageErrors.push(String(error)));
+page.on('console', message => { if (message.type() === 'error' || message.type() === 'warning') consoleErrors.push(`${message.type()}: ${message.text()}`); });
+page.on('requestfailed', request => requestFailures.push(`${request.url()} :: ${request.failure()?.errorText || 'failed'}`));
+
+async function diagnostic(label) {
+  const state = await page.evaluate(() => ({
+    readyState: document.readyState,
+    status: document.getElementById('statusMessage')?.textContent,
+    badge: document.getElementById('modelNameBadge')?.textContent,
+    meshes: window.__uvmapViewer?.meshes?.length,
+    sourceType: window.__uvmapViewer?.sourceType,
+    texture: document.getElementById('textureResolutionLabel')?.textContent,
+    inputFiles: [...(document.getElementById('modelFileInput')?.files || [])].map(file => file.name),
+    pendingFiles: (window.__uvmapPendingModelFiles || []).map(file => file.name),
+    toasts: [...document.querySelectorAll('.toast')].map(x => x.textContent),
+  }));
+  console.error(`QA DIAGNOSTIC ${label}: ${JSON.stringify({ state, pageErrors, consoleErrors, requestFailures }, null, 2)}`);
+}
 
 try {
   await page.goto('http://127.0.0.1:4173/', { waitUntil: 'domcontentloaded', timeout: 60000 });
   await page.waitForFunction(() => window.__uvmapViewer && window.__uvmapTex, null, { timeout: 60000 });
 
   await page.waitForFunction(() => document.querySelector('[data-tool="eyedropper"] .material-symbols-outlined')?.textContent.trim() === 'colorize');
-  assert.equal(await page.locator('[data-tool="eraser"] .material-symbols-outlined').textContent(), 'ink_eraser');
+  assert.equal((await page.locator('[data-tool="eraser"] .material-symbols-outlined').textContent()).trim(), 'ink_eraser');
 
   await page.setInputFiles('#modelFileInput', [resolve(fixtureDir, 'triangle.gltf'), resolve(fixtureDir, 'triangle.bin'), resolve(fixtureDir, 'checker.png')]);
-  await page.waitForFunction(() => window.__uvmapViewer.meshes.length === 1 && document.getElementById('modelNameBadge')?.textContent === 'triangle.gltf', null, { timeout: 60000 });
-  await page.waitForFunction(() => document.getElementById('textureResolutionLabel')?.textContent.includes('16'), null, { timeout: 30000 });
+  try {
+    await page.waitForFunction(() => window.__uvmapViewer.meshes.length === 1 && document.getElementById('modelNameBadge')?.textContent === 'triangle.gltf', null, { timeout: 20000 });
+  } catch (error) {
+    await diagnostic('model-load-timeout');
+    throw error;
+  }
+  try {
+    await page.waitForFunction(() => document.getElementById('textureResolutionLabel')?.textContent.includes('16'), null, { timeout: 15000 });
+  } catch (error) {
+    await diagnostic('texture-load-timeout');
+    throw error;
+  }
 
   const modelInfo = await page.evaluate(() => {
     const viewer = window.__uvmapViewer;
