@@ -1,4 +1,4 @@
-import './qa-patch.js';
+import './persistence-patch.js';
 
 const translations = {
   en: {
