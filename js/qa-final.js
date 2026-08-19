@@ -34,6 +34,72 @@ ModelViewer.prototype.loadTextureFile = async function (...args) {
   finally { window.__uvmapTextureLoadPending = Math.max(0, (window.__uvmapTextureLoadPending || 1) - 1); }
 };
 
+const textureToCanvasWithQa = ModelViewer.prototype.textureToCanvas;
+ModelViewer.prototype.textureToCanvas = async function (texture) {
+  const direct = await textureToCanvasWithQa.call(this, texture);
+  if (direct || !texture?.isTexture) return direct;
+  const image = texture.image || texture.source?.data || {};
+  const mip = texture.mipmaps?.[0] || {};
+  const width = image.width || mip.width;
+  const height = image.height || mip.height;
+  if (!width || !height) return null;
+  const target = new THREE.WebGLRenderTarget(width, height, { depthBuffer: false, stencilBuffer: false });
+  const scene = new THREE.Scene();
+  const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+  const geometry = new THREE.PlaneGeometry(2, 2);
+  const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true, toneMapped: false });
+  scene.add(new THREE.Mesh(geometry, material));
+  const previous = this.renderer.getRenderTarget();
+  try {
+    this.renderer.setRenderTarget(target);
+    this.renderer.clear();
+    this.renderer.render(scene, camera);
+    const pixels = new Uint8Array(width * height * 4);
+    this.renderer.readRenderTargetPixels(target, 0, 0, width, height, pixels);
+    const flipped = new Uint8ClampedArray(pixels.length);
+    const stride = width * 4;
+    for (let y = 0; y < height; y++) flipped.set(pixels.subarray((height - 1 - y) * stride, (height - y) * stride), y * stride);
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    canvas.getContext('2d').putImageData(new ImageData(flipped, width, height), 0, 0);
+    return canvas;
+  } catch (error) {
+    console.warn('Could not rasterize compressed texture', error);
+    return null;
+  } finally {
+    this.renderer.setRenderTarget(previous);
+    target.dispose();
+    geometry.dispose();
+    material.dispose();
+  }
+};
+
+ModelViewer.prototype.applyTextureObject = function (source, key = 'map') {
+  let count = 0;
+  this.meshes.forEach(mesh => {
+    if (!uvAttr(mesh.geometry, this.uvSetName)) return;
+    mats(mesh).forEach(mat => {
+      if (!mat) return;
+      const old = mat[key];
+      const texture = source.clone();
+      this._qaCopyTexture?.(old, texture);
+      texture.flipY = false;
+      texture.colorSpace = ['map', 'emissiveMap', 'specularColorMap'].includes(key) ? THREE.SRGBColorSpace : THREE.NoColorSpace;
+      texture.anisotropy = Math.min(8, this.renderer.capabilities.getMaxAnisotropy());
+      texture.needsUpdate = true;
+      texture.userData.uvmapOwned = true;
+      mat[key] = texture;
+      this.prepareMaterial?.(mesh, mat, key);
+      if (key === 'map' || key === 'alphaMap') mat.transparent = true;
+      mat.needsUpdate = true;
+      if (old?.userData?.uvmapOwned) old.dispose?.();
+      count++;
+    });
+  });
+  return count;
+};
+
 ModelViewer.prototype.applyCanvasToMap = function (canvas, key = 'map') {
   let count = 0;
   this.meshes.forEach(mesh => {
