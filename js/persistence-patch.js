@@ -1,5 +1,6 @@
 import './qa-patch.js';
 import './qa-final.js';
+import './material-groups-patch.js';
 import './document-state-patch.js';
 import { TextureEditor } from './texture-editor.js';
 
