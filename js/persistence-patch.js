@@ -1,6 +1,7 @@
 import './qa-patch.js';
 import './qa-final.js';
 import './selection-glow-patch.js';
+import './orbit-recovery-patch.js';
 import './gltf-deps-patch.js';
 import './model-drop-patch.js';
 import './mtl-persistence-patch.js';
