@@ -1,0 +1,82 @@
+name: QA
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  static-qa:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: JavaScript syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in js/*.js; do
+            echo "Checking $file"
+            node --check "$file"
+          done
+
+      - name: Relative imports and HTML ids
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from html.parser import HTMLParser
+          import re
+          import sys
+
+          root = Path('.')
+          failures = []
+
+          for source in (root / 'js').glob('*.js'):
+              text = source.read_text(encoding='utf-8')
+              for spec in re.findall(r'''(?:import|export)\s+(?:[^'\"]+?\s+from\s+)?['\"](\.[^'\"]+)['\"]''', text):
+                  target = (source.parent / spec).resolve()
+                  if not target.exists():
+                      failures.append(f'{source}: missing relative import {spec}')
+
+          class IdParser(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.ids = []
+              def handle_starttag(self, tag, attrs):
+                  values = dict(attrs)
+                  if 'id' in values:
+                      self.ids.append(values['id'])
+
+          parser = IdParser()
+          parser.feed((root / 'index.html').read_text(encoding='utf-8'))
+          seen = set()
+          for value in parser.ids:
+              if value in seen:
+                  failures.append(f'index.html: duplicate id {value}')
+              seen.add(value)
+
+          if failures:
+              print('\n'.join(failures))
+              sys.exit(1)
+          print(f'OK: {len(parser.ids)} unique HTML ids and all relative imports resolve')
+          PY
+
+      - name: UI em dash guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -n '—' index.html styles.css js/*.js; then
+            echo 'UI source contains an em dash. Use a different punctuation mark.'
+            exit 1
+          fi
+          echo 'OK: no em dash in UI source'
