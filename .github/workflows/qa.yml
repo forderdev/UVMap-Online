@@ -140,6 +140,7 @@ jobs:
         run: |
           node tests/e2e.mjs
           node tests/drag-drop.mjs
+          node tests/orbit-recovery.mjs
 
       - name: Publish browser QA status
         if: always()
