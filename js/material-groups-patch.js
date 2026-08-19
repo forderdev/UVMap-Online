@@ -14,7 +14,7 @@ function buildGroups(viewer){
   for(const [prop,label] of MAPS){
     const groups=[],byTexture=new Map(),byKey=new Map();
     for(const mesh of viewer.meshes){for(const mat of mats(mesh)){const texture=mat?.[prop];if(!texture?.isTexture)continue;let key=getGroup(texture,prop);if(key&&key.startsWith(`${prop}__g`)){let group=byKey.get(key);if(!group){group={key,label,texture,names:new Set()};groups.push(group);byKey.set(key,group);}if(mat.name)group.names.add(mat.name);continue;}let group=byTexture.get(texture);if(!group){key=`${prop}__g${groups.length}`;group={key,label,texture,names:new Set()};groups.push(group);byTexture.set(texture,group);byKey.set(key,group);setGroup(texture,prop,key);}if(mat.name)group.names.add(mat.name);}}
-    const multiple=groups.length>1;groups.forEach((group,index)=>{const name=[...group.names][0]||`Material ${index+1}`;output.push({key:group.key,label:multiple?`${label} · ${name}`:label,texture:group.texture,property:prop});});
+    const multiple=groups.length>1;groups.forEach((group,index)=>{const name=[...group.names][0]||`Material ${index+1}`;output.push({key:multiple?group.key:prop,label:multiple?`${label} · ${name}`:label,texture:group.texture,property:prop,groupKey:group.key});});
   }
   return output;
 }
