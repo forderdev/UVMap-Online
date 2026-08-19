@@ -5,6 +5,7 @@ const MAPS=[['map','Base Color'],['normalMap','Normal'],['roughnessMap','Roughne
 const mats=mesh=>Array.isArray(mesh.material)?mesh.material:[mesh.material];
 const uvAttr=(g,name='uv')=>g.getAttribute(name)||(name==='uv'?null:g.getAttribute('uv'));
 const propOf=key=>String(key||'map').replace(/__g\d+$/,'');
+const groupOf=key=>String(key).includes('__g')?String(key):`${propOf(key)}__g0`;
 
 function buildGroups(viewer){
   const output=[];
@@ -24,9 +25,9 @@ function eachTarget(viewer,key,callback){
 }
 
 ModelViewer.prototype.applyTextureObject=function(source,key='map'){
-  let count=0;eachTarget(this,key,(mesh,mat,prop)=>{const old=mat[prop],texture=source.clone();this._qaCopyTexture?.(old,texture);texture.flipY=false;texture.colorSpace=['map','emissiveMap','specularColorMap'].includes(prop)?THREE.SRGBColorSpace:THREE.NoColorSpace;texture.anisotropy=Math.min(8,this.renderer.capabilities.getMaxAnisotropy());texture.needsUpdate=true;texture.userData=texture.userData||{};texture.userData.uvmapOwned=true;if(String(key).includes('__g'))texture.userData.uvmapGroupKey=key;mat[prop]=texture;this.prepareMaterial?.(mesh,mat,prop);if(prop==='map'||prop==='alphaMap')mat.transparent=true;mat.needsUpdate=true;if(old?.userData?.uvmapOwned)old.dispose?.();count++;});return count;
+  const groupKey=groupOf(key);let count=0;eachTarget(this,key,(mesh,mat,prop)=>{const old=mat[prop],texture=source.clone();this._qaCopyTexture?.(old,texture);texture.flipY=false;texture.colorSpace=['map','emissiveMap','specularColorMap'].includes(prop)?THREE.SRGBColorSpace:THREE.NoColorSpace;texture.anisotropy=Math.min(8,this.renderer.capabilities.getMaxAnisotropy());texture.needsUpdate=true;texture.userData=texture.userData||{};texture.userData.uvmapOwned=true;texture.userData.uvmapGroupKey=groupKey;mat[prop]=texture;this.prepareMaterial?.(mesh,mat,prop);if(prop==='map'||prop==='alphaMap')mat.transparent=true;mat.needsUpdate=true;if(old?.userData?.uvmapOwned)old.dispose?.();count++;});return count;
 };
 
 ModelViewer.prototype.applyCanvasToMap=function(canvas,key='map'){
-  let count=0;eachTarget(this,key,(mesh,mat,prop)=>{const old=mat[prop];let texture;if(old?.isTexture&&old.userData?.uvmapOwned){texture=old;texture.image=canvas;}else{texture=new THREE.CanvasTexture(canvas);this._qaCopyTexture?.(old,texture);texture.userData.uvmapOwned=true;if(String(key).includes('__g'))texture.userData.uvmapGroupKey=key;mat[prop]=texture;}texture.flipY=false;texture.colorSpace=['map','emissiveMap','specularColorMap'].includes(prop)?THREE.SRGBColorSpace:THREE.NoColorSpace;texture.anisotropy=Math.min(8,this.renderer.capabilities.getMaxAnisotropy());texture.needsUpdate=true;if(prop==='map'){mat.color?.setRGB?.(1,1,1);mat.transparent=true;}if(prop==='alphaMap')mat.transparent=true;mat.needsUpdate=true;count++;});return count;
+  const groupKey=groupOf(key);let count=0;eachTarget(this,key,(mesh,mat,prop)=>{const old=mat[prop];let texture;if(old?.isTexture&&old.userData?.uvmapOwned){texture=old;texture.image=canvas;}else{texture=new THREE.CanvasTexture(canvas);this._qaCopyTexture?.(old,texture);texture.userData.uvmapOwned=true;mat[prop]=texture;}texture.userData.uvmapGroupKey=groupKey;texture.flipY=false;texture.colorSpace=['map','emissiveMap','specularColorMap'].includes(prop)?THREE.SRGBColorSpace:THREE.NoColorSpace;texture.anisotropy=Math.min(8,this.renderer.capabilities.getMaxAnisotropy());texture.needsUpdate=true;if(prop==='map'){mat.color?.setRGB?.(1,1,1);mat.transparent=true;}if(prop==='alphaMap')mat.transparent=true;mat.needsUpdate=true;count++;});return count;
 };
