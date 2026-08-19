@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import { ModelViewer } from './model-viewer.js';
 import { TextureEditor } from './texture-editor.js';
 
@@ -10,17 +11,21 @@ function textureFor(mesh,key=activeKey()){
   const prop=propOf(key),grouped=String(key).includes('__g');for(const mat of mats(mesh)){const texture=mat?.[prop];if(!texture?.isTexture)continue;if(!grouped||groupFor(texture,prop)===key)return texture;}return null;
 }
 function keyForMesh(mesh,key=activeKey()){
-  const prop=propOf(key);for(const mat of mats(mesh)){const texture=mat?.[prop];if(texture?.isTexture)return groupFor(texture,prop)||key;}return null;
+  const prop=propOf(key);for(const mat of mats(mesh)){const texture=mat?.[prop];if(texture?.isTexture){const group=groupFor(texture,prop);return String(key).includes('__g')?group||key:key;}}return null;
+}
+function wrap(value,mode){if(value>=0&&value<=1)return value;if(mode===THREE.RepeatWrapping)return value-Math.floor(value);if(mode===THREE.ClampToEdgeWrapping)return value<0?0:1;if(mode===THREE.MirroredRepeatWrapping){const whole=Math.floor(value);return Math.abs(whole)%2===1?Math.ceil(value)-value:value-whole;}return value;}
+function transformLocal(texture,uv){
+  if(texture.matrixAutoUpdate)texture.updateMatrix?.();const out=uv.clone(),base=texture.userData?.uvmapAtlasBaseMatrix;
+  if(base?.length===9)out.applyMatrix3(new THREE.Matrix3().fromArray(base));else out.applyMatrix3(texture.matrix);
+  out.x=wrap(out.x,texture.wrapS);out.y=wrap(out.y,texture.wrapT);if(texture.flipY)out.y=1-out.y;return out;
 }
 function transformed(texture,uv){
-  if(!texture)return uv.clone();texture.updateMatrix?.();const tu=Math.floor(uv.x),tv=Math.floor(uv.y),isTile=tu!==0||tv!==0;
-  if(!isTile){const out=uv.clone();texture.transformUv?.(out);return out;}
-  const out=uv.clone();out.x-=tu;out.y-=tv;texture.transformUv?.(out);out.x+=tu;out.y+=tv;return out;
+  if(!texture)return uv.clone();const tu=Math.floor(uv.x),tv=Math.floor(uv.y),local=uv.clone();local.x-=tu;local.y-=tv;const out=transformLocal(texture,local);out.x+=tu;out.y+=tv;return out;
 }
 function meshMatches(mesh,key=activeKey()){return !String(key).includes('__g')||Boolean(textureFor(mesh,key));}
 
 const faceBase=ModelViewer.prototype.faceInfo;
-ModelViewer.prototype.faceInfo=function(mesh,faceIndex){const info=faceBase.call(this,mesh,faceIndex);if(!info)return info;const texture=textureFor(mesh);if(!texture)return info;info.rawUvs=info.uvs.map(v=>v.clone());info.uvs=info.rawUvs.map(v=>transformed(texture,v));return info;};
+ModelViewer.prototype.faceInfo=function(mesh,faceIndex){const info=faceBase.call(this,mesh,faceIndex);if(!info)return info;const texture=textureFor(mesh);if(!texture)return info;info.rawUvs=info.rawUvs||info.uvs.map(v=>v.clone());info.uvs=info.rawUvs.map(v=>transformed(texture,v));const u=info.uvs.reduce((n,v)=>n+v.x,0)/info.uvs.length,v=info.uvs.reduce((n,p)=>n+p.y,0)/info.uvs.length;info.udim=1001+Math.floor(u)+Math.floor(v)*10;return info;};
 
 const hitBase=ModelViewer.prototype.hitUV;
 ModelViewer.prototype.hitUV=function(hit){const uv=hitBase.call(this,hit);return uv&&hit?.object?transformed(textureFor(hit.object),uv):uv;};
