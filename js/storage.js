@@ -53,6 +53,8 @@ export async function getProject(id) {
   const project = await withStore('readonly', store => requestToPromise(store.get(id)));
   if (project?.editorStateV2) window.__uvmapPendingEditorState = project.editorStateV2;
   else window.__uvmapPendingEditorState = null;
+  window.__uvmapPendingActiveMap = project?.qaActiveMap || null;
+  window.__uvmapPendingActiveUdim = project?.qaActiveUdim || null;
   return project;
 }
 
@@ -66,8 +68,12 @@ export async function saveProject(project) {
     const editor = window.__uvmapTex;
     const editorVisible = !document.getElementById('editor')?.classList.contains('hidden');
     const loadedModel = document.getElementById('modelNameBadge')?.textContent;
+    const mapSelect = document.getElementById('textureMapSelect');
+    const udimSelect = document.getElementById('udimSelect');
     if (editorVisible && editor?.serializePersistentState && project.sourceName && loadedModel === project.sourceName) {
       payload.editorStateV2 = await editor.serializePersistentState();
+      payload.qaActiveMap = mapSelect?.value || 'map';
+      payload.qaActiveUdim = Number(udimSelect?.value || 1001);
     }
   } catch (error) {
     console.warn('Could not persist editor layer state', error);
@@ -81,6 +87,8 @@ export async function moveToTrash(id) {
   if (!project) return;
   await saveProject({ ...project, deletedAt: Date.now() });
   window.__uvmapPendingEditorState = null;
+  window.__uvmapPendingActiveMap = null;
+  window.__uvmapPendingActiveUdim = null;
 }
 
 export async function restoreProject(id) {
@@ -89,6 +97,8 @@ export async function restoreProject(id) {
   const { deletedAt, ...rest } = project;
   await saveProject(rest);
   window.__uvmapPendingEditorState = null;
+  window.__uvmapPendingActiveMap = null;
+  window.__uvmapPendingActiveUdim = null;
 }
 
 export async function deleteProjectForever(id) {
