@@ -1,4 +1,5 @@
 import './qa-patch.js';
+import './qa-final.js';
 import { TextureEditor } from './texture-editor.js';
 
 const originalLoadImageSource = TextureEditor.prototype.loadImageSource;
