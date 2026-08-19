@@ -7,14 +7,15 @@ import { ModelViewer } from './model-viewer.js';
 
 const loadBase=ModelViewer.prototype.loadFile;
 function fileKey(value){try{return decodeURIComponent(String(value).split(/[?#]/)[0]).replace(/\\/g,'/').split('/').pop().toLowerCase();}catch{return String(value).replace(/\\/g,'/').split('/').pop().toLowerCase();}}
+function uniqueFiles(files){const seen=new Set(),out=[];for(const file of files){if(!file?.name)continue;const key=fileKey(file.name);if(seen.has(key))continue;seen.add(key);out.push(file);}return out;}
 ModelViewer.prototype.loadFile=async function(file){
   const ext=file.name.split('.').pop().toLowerCase();if(!['gltf','glb'].includes(ext))return loadBase.call(this,file);
-  this.sourceFile=file;this.sourceType=ext;const candidates=window.__uvmapPendingModelFiles?.length?window.__uvmapPendingModelFiles:[file],byName=new Map(candidates.map(f=>[fileKey(f.name),f])),urls=[];
+  this.sourceFile=file;this.sourceType=ext;const candidates=uniqueFiles([file,...(window.__uvmapPendingModelFiles||[]),...(window.__uvmapPendingModelDependencies||[])]),byName=new Map(candidates.map(f=>[fileKey(f.name),f])),urls=[];window.__uvmapCurrentModelDependencies=candidates.filter(f=>fileKey(f.name)!==fileKey(file.name));
   const manager=new THREE.LoadingManager();manager.setURLModifier(url=>{const match=byName.get(fileKey(url));if(!match)return url;const blob=URL.createObjectURL(match);urls.push(blob);return blob;});
   const draco=new DRACOLoader(manager).setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.185.0/examples/jsm/libs/draco/'),ktx=new KTX2Loader(manager).setTranscoderPath('https://cdn.jsdelivr.net/npm/three@0.185.0/examples/jsm/libs/basis/');ktx.detectSupport(this.renderer);const loader=new GLTFLoader(manager).setDRACOLoader(draco).setKTX2Loader(ktx).setMeshoptDecoder(MeshoptDecoder);
   try{const data=ext==='gltf'?await file.text():await file.arrayBuffer(),result=await new Promise((ok,no)=>loader.parse(data,'',ok,no));this.setModel(result.scene,result.animations||[]);if(!this.meshes.length)throw new Error('No mesh was found in this model.');return this.describeModel();}
   catch(error){const message=String(error?.message||error);if(ext==='gltf'&&/fetch|buffer|image|resource|404|failed to load/i.test(message))throw new Error('A GLTF dependency could not be found. Select the .gltf together with its .bin and image files.');throw error;}
-  finally{urls.forEach(URL.revokeObjectURL);draco.dispose();ktx.dispose();window.__uvmapPendingModelFiles=null;}
+  finally{urls.forEach(URL.revokeObjectURL);draco.dispose();ktx.dispose();window.__uvmapPendingModelFiles=null;window.__uvmapPendingModelDependencies=null;}
 };
 
 function setup(){
