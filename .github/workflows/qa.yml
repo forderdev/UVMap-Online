@@ -136,8 +136,10 @@ jobs:
           cat /tmp/uvmap-server.log
           exit 1
 
-      - name: Browser WebGL smoke test
-        run: node tests/e2e.mjs
+      - name: Browser WebGL smoke tests
+        run: |
+          node tests/e2e.mjs
+          node tests/drag-drop.mjs
 
       - name: Publish browser QA status
         if: always()
