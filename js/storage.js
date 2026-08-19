@@ -50,7 +50,10 @@ export async function listProjects({ trash = false } = {}) {
 }
 
 export async function getProject(id) {
-  return withStore('readonly', store => requestToPromise(store.get(id)));
+  const project = await withStore('readonly', store => requestToPromise(store.get(id)));
+  if (project?.editorStateV2) window.__uvmapPendingEditorState = project.editorStateV2;
+  else window.__uvmapPendingEditorState = null;
+  return project;
 }
 
 export async function saveProject(project) {
@@ -59,6 +62,16 @@ export async function saveProject(project) {
     updatedAt: Date.now(),
     createdAt: project.createdAt || Date.now(),
   };
+  try {
+    const editor = window.__uvmapTex;
+    const editorVisible = !document.getElementById('editor')?.classList.contains('hidden');
+    const loadedModel = document.getElementById('modelNameBadge')?.textContent;
+    if (editorVisible && editor?.serializePersistentState && project.sourceName && loadedModel === project.sourceName) {
+      payload.editorStateV2 = await editor.serializePersistentState();
+    }
+  } catch (error) {
+    console.warn('Could not persist editor layer state', error);
+  }
   await withStore('readwrite', store => requestToPromise(store.put(payload)));
   return payload;
 }
@@ -67,6 +80,7 @@ export async function moveToTrash(id) {
   const project = await getProject(id);
   if (!project) return;
   await saveProject({ ...project, deletedAt: Date.now() });
+  window.__uvmapPendingEditorState = null;
 }
 
 export async function restoreProject(id) {
@@ -74,6 +88,7 @@ export async function restoreProject(id) {
   if (!project) return;
   const { deletedAt, ...rest } = project;
   await saveProject(rest);
+  window.__uvmapPendingEditorState = null;
 }
 
 export async function deleteProjectForever(id) {
